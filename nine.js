@@ -45,7 +45,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		Utils.getElemByClass = function( name, context ) {
 			var ret = [],
 				elements, classArr;
-
+			
 			context = context || document;
 
 			if ( context.getElementsByClassName ) {
@@ -71,7 +71,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		Utils.getElemByTag = function( name, context ) {
 			var ret = [],
 				elements;
-
+			
 			context = context || document;
 			elements = context.getElementsByTagName(name);
 
@@ -90,7 +90,7 @@ if ( typeof(ninejs) === "undefined" ) {
 				node_arr = ['innerHTML','className','id','src','name','text','type','title','value','width','height','resize','border','className','cellSpacing','cellPadding','selected'],
 				userAgent = navigator.userAgent.toLowerCase();
 			
-			if ( this.isRealObject(attr) ) {
+			if ( exports.isRealObject(attr) ) {
 				var style = node.style,
 					v1, v2;
 
@@ -105,7 +105,7 @@ if ( typeof(ninejs) === "undefined" ) {
 
 					v2 = isNaN(v1) ? v1 : Math.round(v1) + 'px';
 
-					if ( this.inArray(style_arr1, i) ) {
+					if ( exports.inArray(i, style_arr1) ) {
 						if ( i == "opacity" ) {				
 							if ( userAgent.indexOf('ie6') > -1 || userAgent.indexOf('ie7') > -1 ) {
 								style.filter = 'alpha(opacity=' + Math.round(v1*100) + ')';
@@ -117,9 +117,9 @@ if ( typeof(ninejs) === "undefined" ) {
 						} else {
 							style[i] = v1;
 						}
-					} else if ( this.inArray(style_arr2, i) ) {
+					} else if ( exports.inArray(i, style_arr2) ) {
 						style[i] = v2;
-					} else if ( this.inArray(node_arr, i) ) {
+					} else if ( exports.inArray(i, node_arr) ) {
 						node[i] = v1;
 					} else {
 						style[i] = v1;
@@ -140,18 +140,18 @@ if ( typeof(ninejs) === "undefined" ) {
 			node.removeAttribute(key);
 		};
 		Utils.html = function( node, html ) {
-			this.css(node, {innerHTML: html || ''});
+			exports.css(node, {innerHTML: html || ''});
 		};
 		Utils.hide = function( node ) {	// 隐藏DOM
-			this.css(node, {display: 'none'});
+			exports.css(node, {display: 'none'});
 		};
 		Utils.show = function( node ) {	// 显示DOM
-			this.css(node, {display: node.display || 'block'});
+			exports.css(node, {display: node.display || 'block'});
 		};	
 		Utils.appendChild = function( parentNode, css, tag ) {	// 添加DOM节点
-			var childNode = this.createElement(tag);
+			var childNode = exports.createElement(tag);
 			if ( css ) {
-				this.css(childNode, css);
+				exports.css(childNode, css);
 			}
 			parentNode = parentNode || document.body;
 			parentNode.appendChild(childNode);
@@ -180,7 +180,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		Utils.addClass = function( elem, className ) {
 			var flag = false, arr = [];
 
-			if ( this.isString( elem.className ) && this.isString( className ) ) {
+			if ( exports.isString( elem.className ) && exports.isString( className ) ) {
 				if ( elem.className.length > 0 ) {
 					arr = elem.className.split(" ");
 					for (var i = 0, len = arr.length; i < len; i++) {
@@ -198,7 +198,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		Utils.removeClass = function( elem, className ) {
 			var arr = [], newArr = [];
 
-			if ( this.isString( elem.className ) && this.isString( className ) && elem.className.length > 0 ) {
+			if ( exports.isString( elem.className ) && exports.isString( className ) && elem.className.length > 0 ) {
 				arr = elem.className.split(" ");
 
 				for (var i = 0, len = arr.length; i < len; i++) {
@@ -211,7 +211,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		Utils.hasClass = function( elem, className ) {
 			var flag = false, re;
 			
-			if ( this.isString( className )) {
+			if ( exports.isString( className )) {
 				re = new RegExp("(^|\\s)" + className + "(\\s|$)");
 				flag = re.test( elem.className );
 			}
@@ -220,7 +220,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		};
 		Utils.enable3D = function( node, perspective, perspectiveOrigin ) {
 			if ( node.style ) {
-				node.style[ this.BrowserEntry.cssPrefix() + 'TransformStyle' ] = 'preserve-3d';
+				node.style[ exports.BrowserEntry.cssPrefix() + 'TransformStyle' ] = 'preserve-3d';
 				if ( perspective ) {
 					node.style[ pre + 'Perspective' ] = perspective + 'px';
 				}
@@ -231,7 +231,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		};
 		Utils.set3D = function( node, css3d ) {
 			if ( node.style ) {
-				node.style[ this.BrowserEntry.cssPrefix() + 'Transform' ] = (
+				node.style[ exports.BrowserEntry.cssPrefix() + 'Transform' ] = (
 					  'rotateX(' + (css3d.rx || 0) + 'deg) '
 					+ 'rotateY(' + (css3d.ry || 0) + 'deg) '
 					+ 'rotateZ(' + (css3d.rz || 0) + 'deg) '
@@ -399,7 +399,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		Utils.urlEncode = function( obj ) {	// 将对象转换成url参数返回
 			var arr = [];
 
-			if ( this.isString(obj) ) return obj;
+			if ( exports.isString(obj) ) return obj;
 			
 			for ( var i in obj ) {
 				if ( own_proto.call(obj, i) ) {
@@ -1122,7 +1122,7 @@ if ( typeof(ninejs) === "undefined" ) {
 				
 				return true;
 			},
-			add: function( id, node, end, duration, fn, delay ) { // AnimateEntry.add('div1', this, {left:500, top:300, opacity:0}, 1000, 'quadOut', 1000)
+			add: function( id, node, end, duration, fn, delay ) {
 				this.list[id] = {
 					node: node,
 					end: end,
@@ -1134,9 +1134,9 @@ if ( typeof(ninejs) === "undefined" ) {
 
 				for ( var i in end ) {
 					if ( i == 'opacity' ) {
-						this.list[id].begin[i] = typeof(node['_' + i]) == 'undefined' ? 1 : node['_' + i];
+						this.list[id].begin[i] = node['_' + i] || 1;
 					} else {
-						this.list[id].begin[i] = node['_' + i];
+						this.list[id].begin[i] = node['_' + i] || 0;
 					}
 				}
 
@@ -1321,7 +1321,7 @@ if ( typeof(ninejs) === "undefined" ) {
 			var xhr,
 				XML = ['MSXML2.XMLHTTP.3.0', 'MSXML2.XMLHTTP', 'Microsoft.XMLHTTP'];
 
-			if ( this.isFunction(XMLHttpRequest) ) {
+			if ( exports.isFunction(XMLHttpRequest) ) {
 				xhr = new XMLHttpRequest();
 			} else {
 				for ( var i = 0,len = XML.length; i < len; i += 1 ) {
