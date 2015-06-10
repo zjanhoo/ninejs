@@ -46,6 +46,8 @@ if ( typeof(ninejs) === "undefined" ) {
 			var ret = [],
 				elements, classArr;
 
+			context = context || document;
+
 			if ( context.getElementsByClassName ) {
 				elements = context.getElementsByClassName(name);
 				for ( var i = 0, len = elements.length; i < len; i++ ) {
@@ -68,7 +70,10 @@ if ( typeof(ninejs) === "undefined" ) {
 		};
 		Utils.getElemByTag = function( name, context ) {
 			var ret = [],
-				elements = context.getElementsByTagName(name);
+				elements;
+
+			context = context || document;
+			elements = context.getElementsByTagName(name);
 
 			for ( var i = 0, len = elements.length; i < len; i++ ) {
 				ret.push(elements[i]);
