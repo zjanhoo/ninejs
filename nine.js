@@ -220,7 +220,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		};
 		Utils.enable3D = function( node, perspective, perspectiveOrigin ) {
 			if ( node.style ) {
-				node.style[ exports.BrowserEntry.cssPrefix() + 'TransformStyle' ] = 'preserve-3d';
+				node.style[ exports.BrowserEntry.cssPrefix + 'TransformStyle' ] = 'preserve-3d';
 				if ( perspective ) {
 					node.style[ pre + 'Perspective' ] = perspective + 'px';
 				}
@@ -231,7 +231,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		};
 		Utils.set3D = function( node, css3d ) {
 			if ( node.style ) {
-				node.style[ exports.BrowserEntry.cssPrefix() + 'Transform' ] = (
+				node.style[ exports.BrowserEntry.cssPrefix + 'Transform' ] = (
 					  'rotateX(' + (css3d.rx || 0) + 'deg) '
 					+ 'rotateY(' + (css3d.ry || 0) + 'deg) '
 					+ 'rotateZ(' + (css3d.rz || 0) + 'deg) '
@@ -1093,7 +1093,8 @@ if ( typeof(ninejs) === "undefined" ) {
 					live++;
 					
 					if ( !anm.moveone(item) ) {
-						AnimateEntry.list[i] = null;
+						anm.list[i].callback && exports.isFunction(anm.list[i].callback) && anm.list[i].callback();
+						anm.list[i] = null;
 					}
 				}
 
@@ -1117,18 +1118,18 @@ if ( typeof(ninejs) === "undefined" ) {
 				for ( var i in obj.end ) {
 					css[i] = AnimateEntry[obj.fn](rate, obj.begin[i], obj.end[i] - obj.begin[i]);
 				}
-			
 				exports.css(obj.node, css);
 				
 				return true;
 			},
-			add: function( id, node, end, duration, fn, delay ) {
+			add: function( id, node, end, duration, fn, delay, callback ) {
 				this.list[id] = {
 					node: node,
 					end: end,
 					duration: duration,
 					fn: fn || 'linear',
 					time: exports.getMS() + (delay || 0),
+					callback: callback || null,
 					begin: {}
 				};
 
@@ -1145,31 +1146,31 @@ if ( typeof(ninejs) === "undefined" ) {
 					this.isRunning = true;
 				}
 			},
-			fadeIn: function( id, node ) {
-				AnimateEntry.add(id, node, {opacity: 0}, 700);
+			fadeIn: function( id, node, duration, callback ) {
+				AnimateEntry.add(id, node, {opacity: 0}, duration || 700, 'linear', 0, callback);
 			},
-			fadeOut: function( id, node ) {
-				AnimateEntry.add(id, node, {opacity: 1}, 700);
+			fadeOut: function( id, node, duration, callback ) {
+				AnimateEntry.add(id, node, {opacity: 1}, duration || 700, 'linear', 0, callback);
 			},
-			fadeToggle: function( id, node ) {
+			fadeToggle: function( id, node, duration, callback ) {
 				if ( node._opacity > 0.5 || typeof(node._opacity) == 'undefined' ) {
-					this.fadeIn(id, node);
+					this.fadeIn(id, node, duration, callback);
 				} else {
-					this.fadeOut(id, node);
+					this.fadeOut(id, node, duration, callback);
 				}
 			},
-			slideDown: function( id, node ) {
-				AnimateEntry.add(id, node, {height: node.__height}, 700);
+			slideDown: function( id, node, duration, callback ) {
+				AnimateEntry.add(id, node, {height: node.__height}, duration || 700, 'linear', 0, callback);
 			},
-			slideUp: function( id, node ) {
+			slideUp: function( id, node, duration, callback ) {
 				node.__height = node._height;
-				AnimateEntry.add(id, node, {height: 0}, 700);
+				AnimateEntry.add(id, node, {height: 0}, duration || 700, 'linear', 0, callback);
 			},
-			slideToggle: function( id, node ) {
+			slideToggle: function( id, node, duration, callback ) {
 				if ( !node.__height || node._height > node.__height/2 ) {
-					this.slideUp(id, node);
+					this.slideUp(id, node, duration, callback);
 				} else {
-					this.slideDown(id, node);
+					this.slideDown(id, node, duration, callback);
 				}
 			}
 		};
@@ -1251,14 +1252,14 @@ if ( typeof(ninejs) === "undefined" ) {
 				e = e || win.event;
 				
 				if ( exports.isUndefined(isBubble) ) {
-					exports.cancelBubble(e);
+					EventEntry.cancelBubble(e);
 				}
 
 				e = e.changedTouches ? e.changedTouches[0] : e;
 				fn.call(node, e);
 			};
 			
-			if ( exports.BrowserEntry.isTouch() ) {
+			if ( exports.BrowserEntry.isTouch ) {
 				type = EventEntry.mouse2Touch();
 			} else {
 				type = evt;
@@ -1280,7 +1281,7 @@ if ( typeof(ninejs) === "undefined" ) {
 			exports.css(node, { position: 'absolute', cursor: 'move' });
 
 			exports.EventEntry.bindEvent(node, 'mousedown', function( e ) {
-				exports.cancelBubble(e);
+				exports.EventEntry.cancelBubble(e);
 				e = e.changedTouches ? e.changedTouches[0] : (e || window.event);
 				
 				this.down = 1;
@@ -1291,7 +1292,7 @@ if ( typeof(ninejs) === "undefined" ) {
 			exports.EventEntry.bindEvent(node, 'mousemove', function( e ) {
 				var posX, posY;
 
-				exports.cancelBubble(e);
+				exports.EventEntry.cancelBubble(e);
 				e = e.changedTouches ? e.changedTouches[0] : (e || window.event);	//兼容触屏和IE
 				
 				if ( this.down == 1 ) {
@@ -1408,332 +1409,3 @@ if ( typeof(ninejs) === "undefined" ) {
 		exports.AjaxEntry = AjaxEntry;
 	});
 })(ninejs || (ninejs = {}));
-
-/* ============================================================== widget ============================================================================= */
-
-/**
- * Class ImageCycle
- */
-ninejs.extend(ninejs, function( exports ) {
-	function ImageCycle( options ) {
-		if ( !options || !options.render ) return;
-		
-		if ( !(this instanceof ImageCycle) ) {
-			return new ImageCycle(options);	
-		} else {
-			if ( !options.speed ) options.speed = 5;
-			if ( !options.timeout ) options.timeout = 1000;
-			if ( !options.interval ) options.interval = 20;
-			if ( !options.unit ) options.unit = 150;
-			if ( typeof(options.openAuto) === "undefined" ) options.openAuto = false;
-			
-			exports.extend(this, options);
-			
-			this.init();	
-		}
-	}
-
-	ImageCycle.prototype = {
-		intervalId: null,
-		timeoutId: null,
-		direction: 1,
-		isStop: true,
-		init: function () {
-			var _this = this,
-				el = exports.getElemById(this.render),
-				liList = [],
-				parentEl, prevEl, nextEl, childEl, i, len, childrenEl;
-			
-			if ( !el ) {
-				return;
-			} else {
-				childEl = el.children[0];
-			}
-
-			if ( !childEl || !childEl.children ) return;
-			if ( childEl.children.length <= 1 ) return;
-
-			if ( el && childEl ) {
-				i = 0;
-				len = childEl.children.length;				
-
-				for ( ; i < len; i++ ) {
-					childrenEl = childEl.children[i];
-					if ( childrenEl.nodeType == 1 && childrenEl.nodeName.toLowerCase() == "li" ) {
-						liList.push(childrenEl);
-					}
-				}
-				
-				this.elem = childEl;
-				this.length = liList.length;
-				this.width = this.unit * this.length;
-				this.elem.style.width = this.width + "px";				
-				this.elem.style.marginLeft = "0px";
-			}
-
-			if ( el && (parentEl = el.parentNode) ) {
-				this.parentEl = parentEl;
-				
-				if ( parentEl.children.length > 1 ) {
-					if ( prevEl = parentEl.children[0].children[0] ) {
-						this.prevEl = prevEl;
-						exports.EventEntry.addEvent(this.prevEl, "click", function( e ) {
-							_this.start(e);								   
-						});
-						exports.EventEntry.addEvent(this.prevEl, "mouseout", function( e ) {
-							var mleft = parseInt(_this.elem.style.marginLeft);
-							if ( mleft <= (_this.unit - _this.width) ) {
-								_this.openAuto && _this.autoRun();
-							}
-						});
-					}
-					if ( nextEl = parentEl.children[parentEl.children.length - 1].children[0] ) {
-						this.nextEl = nextEl;
-						exports.EventEntry.addEvent(this.nextEl, "click", function( e ) {
-							_this.start(e);  
-						});
-						exports.EventEntry.addEvent(this.nextEl, "mouseout", function( e ) {
-							var mleft = parseInt(_this.elem.style.marginLeft);
-							if ( mleft >= 0 ) {
-								_this.openAuto && _this.autoRun();
-							}
-						});
-					}
-				}
-				
-				exports.EventEntry.addEvent(this.elem, "mouseover", function( e ) {
-					_this.stop();  
-				});
-				exports.EventEntry.addEvent(this.elem, "mouseout", function( e ) {
-					_this.openAuto && _this.ready();
-				});				
-			}
-			
-			if ( this.openAuto ) {
-				this.direction = -1;
-				this.run();
-			}
-		},
-		ready: function () {
-			var mleft = parseInt(this.elem.style.marginLeft);
-			
-			if ( mleft >= 0 || mleft <= (this.unit - this.width) ) {
-				this.direction = -this.direction;
-			}
-			
-			this.isStop = true;
-			this.run();			
-		},
-		start: function ( e ) {
-			var evt = e || window.event,
-				target = evt.target || evt.srcElement;																	   
-
-			if ( target.getAttribute("data-id") == "prev" ) {
-				this.direction = -1;				
-			} else {
-				this.direction = 1;
-			}
-				
-			clearTimeout(this.timeoutId);
-			this.isStop = true;
-			this.run();
-		},
-		stop: function () {
-			var mleft = parseInt(this.elem.style.marginLeft);
-			
-			if ( mleft % this.unit == 0 ) {
-				this.clear();
-			}
-		},
-		clear: function () {
-			clearTimeout(this.timeoutId);
-			clearInterval(this.intervalId);
-			this.isStop = true;
-		},
-		autoRun: function () {
-			var _this = this;
-			
-			clearTimeout(this.timeoutId);
-			this.timeoutId = setTimeout(function(){
-				_this.ready();
-			}, this.timeout);
-		},
-		run: function () {
-			var _this = this,
-				mleft = parseInt(this.elem.style.marginLeft);
-			
-			if ( this.direction == -1 && mleft <= (this.unit - this.width) ) return;
-			if ( this.direction == 1 && mleft >= 0 ) return;
-			
-			if ( this.isStop ) {
-				clearInterval(this.intervalId);
-				this.intervalId = setInterval(function(){
-					_this.move();								   
-				}, this.interval);
-				
-				this.elem.style.marginLeft = mleft + this.direction * this.speed + "px";
-			}
-		},
-		move: function () {
-			var mleft = parseInt(this.elem.style.marginLeft);
-			
-			if ( mleft % this.unit == 0 ) {
-				this.clear();
-				this.openAuto && this.autoRun();
-			} else {
-				mleft = mleft + this.direction * this.speed;
-				
-				this.elem.style.marginLeft = mleft + "px";
-				this.isStop = false;
-			}
-		}
-	};
-
-	exports.ImageCycle = ImageCycle;
-});
-
-/**
- * Object Popup
- */
-ninejs.extend(ninejs, function( exports ) {
-	var popup = {};
-
-	popup.show = function( options ) {
-		if ( !options.popupId ) {
-			options.popupId = "popup";
-		}
-		if ( options.hasMask && !options.popupId ) {
-			options.popupId = "mask";
-		}
-
-		popup.params = options;
-
-		var cWidth = exports.BrowserEntry.getClientHeight(),				
-			sHeight = exports.BrowserEntry.getScrollHeight(),
-			popupElem, maskElem, maskStyle;
-
-		// 添加遮罩
-		if ( options.hasMask ) {
-			maskElem = exports.getElemById(options.maskId);
-
-			if ( maskElem ) {
-				maskElem.style.display = "block";
-			} else {
-				maskElem = document.createElement("div");
-				maskElem.id = options.maskId;
-			
-				document.body.appendChild( maskElem );
-			}
-			
-			maskStyle = {
-				"width": cWidth + "px",
-				"height": sHeight + "px",
-				"backgroundColor": "#000000",
-				"opacity": "0.35",
-				"filter": "alpha(opacity=35)",
-				"position": "absolute",
-				"left": "0px",
-				"top": "0px",
-				"zIndex": 99999
-			};
-
-			exports.extend(maskStyle, options.maskStyle);
-			
-			for ( var i in maskStyle ) {
-				maskElem.style[i] = maskStyle[i];
-			}
-		}
-		
-		// 添加弹出框
-		popupElem = exports.getElemById(options.popupId);
-
-		if ( popupElem ) {
-			popupElem.style.display = "block";
-		} else {
-			popupElem = document.createElement("div");			
-			popupElem.id = options.popupId;
-			popupElem.className = "popup";
-			
-			if ( options.renderTo ) {
-				exports.getElemById(options.renderTo).appendChild( popupElem );
-			} else {
-				document.body.appendChild( popupElem );
-			}
-		}
-		
-		if ( options.popupStyle ) {
-			for ( var i in options.popupStyle ) {
-				popupElem.style[i] = options.popupStyle[i];	
-			}
-		}
-		
-		popupElem.innerHTML = options.html || "";
-		popup.addEvents();
-		popup.fixPosition({ maskId: options.maskId, popupId: options.popupId });
-
-		return popup;
-	};
-
-	popup.hide = function( opts, v ) {
-		var popElem = exports.getElemById(opts.popupId || "popup"),
-			maskElem = exports.getElemById(opts.maskId || "mask");
-		
-		if ( popElem ) {
-			if ( !v ) {
-				//popElem.innerHTML = "";
-				popElem.style.display = "none";					
-			} else {
-				popElem.parentNode && popElem.parentNode.removeChild(popElem);
-			}
-		}
-		
-		if ( maskElem ) {
-			maskElem.style.display = "none";	
-		}
-	};
-	
-	popup.fixPosition = function( opts ) {
-		var popElem = exports.getElemById(opts.popupId || "popup"),
-			maskElem = exports.getElemById(opts.maskId || "mask"),
-			st = exports.BrowserEntry.getScrollTop(),
-			sh = exports.BrowserEntry.getScrollHeight(),
-			cw = exports.BrowserEntry.getClientWidth(),
-			ch = exports.BrowserEntry.getClientHeight(),
-			oh;
-		
-		if ( popElem ) {
-			oh = popElem.offsetHeight;
-			if ( ch > oh ) {
-				popElem.style.top = (st + (ch - oh)/2) + "px";
-			} else {
-				popElem.style.top = st + "px";
-			}
-		}
-		
-		if ( maskElem ) {
-			maskElem.style.width = cw + "px";
-			maskElem.style.height = sh + "px";
-		}
-
-		window.onscroll = function() {
-			var params = popup.params;
-			popup.fixPosition({ popupId: params.popupId, maskId: params.maskId });
-		};
-		window.onresize = function() {
-			var params = popup.params;
-			popup.fixPosition({ popupId: params.popupId, maskId: params.maskId });
-		};
-	};
-
-	popup.addEvents = function() {
-		var events = popup.params.events;
-		for ( var i = 0, len = events.length; i < len; i++ ) {
-			(function( i ) {
-				var elem = document.getElementById(events[i].id);
-				elem && exports.EventEntry.addEvent( elem, events[i].ev, events[i].fn );
-			})( i );
-		}
-	};
-
-	exports.Popup = popup;
-});
