@@ -103,10 +103,8 @@ if ( typeof(ninejs) === "undefined" ) {
 						node['_' + i] = v1;
 					}
 
-					v2 = isNaN(v1) ? v1 : Math.round(v1) + 'px';
-
 					if ( exports.inArray(i, style_arr1) ) {
-						if ( i == "opacity" ) {				
+						if ( i == "opacity" ) {
 							if ( userAgent.indexOf('ie 6') > -1 || userAgent.indexOf('ie 7') > -1 ) {
 								style.filter = 'alpha(opacity=' + Math.round(v1*100) + ')';
 							} else if ( userAgent.indexOf('ie 8') > -1 ) {
@@ -118,6 +116,9 @@ if ( typeof(ninejs) === "undefined" ) {
 							style[i] = v1;
 						}
 					} else if ( exports.inArray(i, style_arr2) ) {
+						v2 = parseInt(v1);
+						v2 = isNaN(v2) ? 0 : (Math.round(v2) + 'px');
+
 						style[i] = v2;
 					} else if ( exports.inArray(i, node_arr) ) {
 						node[i] = v1;
@@ -125,6 +126,8 @@ if ( typeof(ninejs) === "undefined" ) {
 						style[i] = v1;
 					}
 				}
+			} else if ( exports.isString(attr) ) {
+				return exports.getStyle(node, attr);
 			}
 		};
 		Utils.attr = function( node, key, value ) {
@@ -171,7 +174,7 @@ if ( typeof(ninejs) === "undefined" ) {
 			}
 		};
 		Utils.getStyle = function( elem, key ) {	// 得到样式
-			return elem.currentStyle ? elem.currentStyle[key] : (document.defaultView.getComputedStyle(elem, false)[key] || null);
+			return elem.currentStyle ? elem.currentStyle[key] : document.defaultView.getComputedStyle(elem, null).getPropertyValue(key);
 		};
 		Utils.setStyle = function( elem, key, value ) {
 			if ( !value ) return;
@@ -183,7 +186,7 @@ if ( typeof(ninejs) === "undefined" ) {
 			if ( exports.isString( elem.className ) && exports.isString( className ) ) {
 				if ( elem.className.length > 0 ) {
 					arr = elem.className.split(" ");
-					for (var i = 0, len = arr.length; i < len; i++) {
+					for ( var i = 0, len = arr.length; i < len; i++ ) {
 						if ( arr[i] == className ) {
 							flag = true;
 							break;
@@ -425,8 +428,10 @@ if ( typeof(ninejs) === "undefined" ) {
 			dt = dt || new Date();
 			return dt.getTime();
 		};
+		/* 空函数 */
+		Utils.getEmptyFn = function(){};
 		/* AJAX处理函数 */
-		Utils.requirejs = function ( url, callback ) {	// 加载JS
+		Utils.loadjs = function ( url, callback ) {	// 加载JS
 			var scriptElem = document.createElement("script");
 			
 			if ( scriptElem.readyState ) {
@@ -648,7 +653,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		};
 	});
 
-	// Md5Entry
+	/* Md5Entry */
 	scope.extend(scope, function( exports ) {
 		var _Md5 = {
 			hexcase : 0,
@@ -837,7 +842,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		exports.Md5Entry = Md5Entry;
 	});
 
-	// BrowserEntry
+	/* BrowserEntry */
 	scope.extend(scope, function( exports ) {
 		var BrowserEntry = {},
 			userAgent = window.navigator.userAgent.toLowerCase(),
@@ -1064,9 +1069,15 @@ if ( typeof(ninejs) === "undefined" ) {
 
 	/* AnimateEntry */
 	scope.extend(scope, function( exports ) {
-		var AnimateEntry = {
-			list: {},
-			isRunning: false,
+		var AnimateEntry = function () {
+			// TODO::
+			this.list = {};
+			this.isRunning = false;
+		};
+		
+		AnimateEntry.prototype = {
+			moveIndex: 1,
+			delay: 30,
 			linear: function( rate, begin, dis ) {
 				return begin + dis * rate;
 			},
@@ -1084,29 +1095,34 @@ if ( typeof(ninejs) === "undefined" ) {
 				}
 			},
 			repeater: function() {
-				var anm = AnimateEntry, live = 0, item;
+				var _this = this, index = 0, item;
 
-				for ( var i in anm.list ) {
-					if ( !anm.list[i] ) continue;
+				for ( var i in _this.list ) {
+					if ( !this.list[i] ) continue;
 					
-					item = anm.list[i];
-					live++;
+					item = this.list[i];
+					index++;
 					
-					if ( !anm.moveone(item) ) {
-						anm.list[i].callback && exports.isFunction(anm.list[i].callback) && anm.list[i].callback();
-						anm.list[i] = null;
+					if ( !this.moveone(item) ) {
+						this.list[i].callback && exports.isFunction(this.list[i].callback) && this.list[i].callback();
+						this.list[i] = null;
 					}
 				}
 
-				if ( live ) {
-					setTimeout(anm.repeater, 30);
+				if ( index ) {
+					setTimeout(function(){
+						_this.repeater();
+					}, this.delay);
 				} else {
-					anm.isRunning = false;
-					anm.list = {};
+					this.isRunning = false;
+					this.list = {};
 				}
 			},
 			moveone: function( obj ) {
-				var rate = (exports.getMS() - obj.time)/obj.duration, css = {};
+				var rate, css = {}, newStyle;
+
+				var currTime = exports.getMS();
+				rate = this.delay * this.moveIndex / obj.duration;
 
 				if ( rate >= 1 ) {
 					exports.css(obj.node, obj.end);
@@ -1116,13 +1132,18 @@ if ( typeof(ninejs) === "undefined" ) {
 				}
 
 				for ( var i in obj.end ) {
-					css[i] = AnimateEntry[obj.fn](rate, obj.begin[i], obj.end[i] - obj.begin[i]);
+					newStyle = this[obj.fn](rate, obj.begin[i], obj.end[i] - obj.begin[i]);
+					css[i] = newStyle;
 				}
 				exports.css(obj.node, css);
+
+				this.moveIndex += 1;
 				
 				return true;
 			},
 			add: function( id, node, end, duration, fn, delay, callback ) {
+				var nodeAttr, nodeCss, beginVal;
+
 				this.list[id] = {
 					node: node,
 					end: end,
@@ -1134,11 +1155,16 @@ if ( typeof(ninejs) === "undefined" ) {
 				};
 
 				for ( var i in end ) {
+					nodeAttr = node['_' + i];
+					nodeCss = exports.getStyle(node, i);
+
 					if ( i == 'opacity' ) {
-						this.list[id].begin[i] = node['_' + i] || 1;
+						beginVal = exports.isUndefined(nodeAttr) ? (exports.isUndefined(nodeCss) ? 1 : nodeCss) : nodeAttr;
 					} else {
-						this.list[id].begin[i] = node['_' + i] || 0;
+						beginVal = exports.isUndefined(nodeAttr) ? (exports.isUndefined(nodeCss) ? 0 : nodeCss) : nodeAttr;
 					}
+
+					this.list[id].begin[i] = parseInt(beginVal);
 				}
 
 				if ( !this.isRunning ) {
@@ -1147,24 +1173,24 @@ if ( typeof(ninejs) === "undefined" ) {
 				}
 			},
 			fadeIn: function( id, node, duration, callback ) {
-				AnimateEntry.add(id, node, {opacity: 0}, duration || 700, 'linear', 0, callback);
+				this.add(id, node, {opacity: 0}, duration || 700, 'linear', 0, callback);
 			},
 			fadeOut: function( id, node, duration, callback ) {
-				AnimateEntry.add(id, node, {opacity: 1}, duration || 700, 'linear', 0, callback);
+				this.add(id, node, {opacity: 1}, duration || 700, 'linear', 0, callback);
 			},
 			fadeToggle: function( id, node, duration, callback ) {
-				if ( node._opacity > 0.5 || typeof(node._opacity) == 'undefined' ) {
+				if ( node._opacity > 0.5 || exports.isUndefined(node._opacity) ) {
 					this.fadeIn(id, node, duration, callback);
 				} else {
 					this.fadeOut(id, node, duration, callback);
 				}
 			},
 			slideDown: function( id, node, duration, callback ) {
-				AnimateEntry.add(id, node, {height: node.__height}, duration || 700, 'linear', 0, callback);
+				this.add(id, node, {height: node.__height}, duration || 700, 'linear', 0, callback);
 			},
 			slideUp: function( id, node, duration, callback ) {
 				node.__height = node._height;
-				AnimateEntry.add(id, node, {height: 0}, duration || 700, 'linear', 0, callback);
+				this.add(id, node, {height: 0}, duration || 700, 'linear', 0, callback);
 			},
 			slideToggle: function( id, node, duration, callback ) {
 				if ( !node.__height || node._height > node.__height/2 ) {
@@ -1178,7 +1204,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		exports.AnimateEntry = AnimateEntry;
 	});
 
-	// EventEntry
+	/* EventEntry */
 	scope.extend(scope, function( exports ) {
 		var EventEntry = {
 			addEvent: null,
@@ -1273,7 +1299,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		exports.EventEntry = EventEntry;
 	});
 
-	// DragEntry
+	/* DragEntry */
 	scope.extend(scope, function( exports ) {
 		var DragEntry = {};
 
@@ -1314,7 +1340,7 @@ if ( typeof(ninejs) === "undefined" ) {
 		exports.DragEntry = DragEntry;
 	});
 
-	// AjaxEntry
+	/* AjaxEntry */
 	scope.extend(scope, function( exports ) {
 		var AjaxEntry = {};
 
