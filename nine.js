@@ -1069,15 +1069,15 @@ if ( typeof(ninejs) === "undefined" ) {
 
 	/* AnimateEntry */
 	scope.extend(scope, function( exports ) {
-		var AnimateEntry = function () {
+		var AnimateEntry = function ( delay ) {
 			// TODO::
 			this.list = {};
 			this.isRunning = false;
+			this.delay = delay || 30;
 		};
 		
 		AnimateEntry.prototype = {
 			moveIndex: 1,
-			delay: 30,
 			linear: function( rate, begin, dis ) {
 				return begin + dis * rate;
 			},
