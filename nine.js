@@ -4,6 +4,15 @@ if ( typeof(ninejs) === "undefined" ) {
 }
 
 ;(function( scope ) {
+	// 脚本描述
+	scope.author = "zjanhoo";
+	scope.email = "zjanhoo@163.com";
+	scope.update = "2015-06-12";
+
+	// 定义常量
+	scope.PATH = "";
+	scope.NS = "nine";
+
 	scope.extend = function () {
 		var args = Array.prototype.slice.call(arguments),
 			str_proto = Object.prototype.toString,
@@ -608,6 +617,32 @@ if ( typeof(ninejs) === "undefined" ) {
 			}
 
 			return this;
+		};
+		// use函数
+		exports.use = function() {
+			var args = Array.prototype.slice.call(arguments),
+				callback = args.pop(),
+				names = args[0],
+				index = 0;
+			
+			if ( !exports.isUndefined(names) ) {
+				if ( exports.isString(names) ) {
+					names = [names];
+				}
+
+				if ( exports.isArray(names) ) {
+					for ( var i = 0; i < names.length; i++ ) {
+						exports.loadjs(exports.PATH + exports.NS + "." + names[i] + "." + "js", _callback);
+					}
+				}
+			}
+
+			function _callback() {
+				index += 1;
+				if ( index == names.length ) {
+					callback.call(this, exports);
+				}
+			}
 		};
 		// klass函数
 		exports.klass = function() {
