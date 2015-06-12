@@ -107,9 +107,9 @@ if ( typeof(ninejs) === "undefined" ) {
 
 					if ( exports.inArray(i, style_arr1) ) {
 						if ( i == "opacity" ) {				
-							if ( userAgent.indexOf('ie6') > -1 || userAgent.indexOf('ie7') > -1 ) {
+							if ( userAgent.indexOf('ie 6') > -1 || userAgent.indexOf('ie 7') > -1 ) {
 								style.filter = 'alpha(opacity=' + Math.round(v1*100) + ')';
-							} else if ( userAgent.indexOf('ie8') > -1 ) {
+							} else if ( userAgent.indexOf('ie 8') > -1 ) {
 								style.filter = 'progid:DXImageTransform.Microsoft.Alpha(opacity=' + Math.round(v1*100) + ')';
 							} else {
 								style.opacity = v1;
